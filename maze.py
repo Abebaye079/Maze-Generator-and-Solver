@@ -4,18 +4,15 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import random
 
-# --- CONSTANTS ---
 ROWS = 20
 COLS = 20
-CELL_SIZE = 30 
+CELL_SIZE = 30
 
-# --- DATA STRUCTURES ---
 # northWall[r][c] = 1 if solid upper wall, 0 if missing (eaten)
 northWall = [[1 for _ in range(COLS + 1)] for _ in range(ROWS + 1)]
 # eastWall[r][c] = 1 if solid right wall, 0 if missing (eaten)
 eastWall = [[1 for _ in range(COLS + 1)] for _ in range(ROWS + 1)]
 
-# Track visited cells for the generation algorithm
 visited = [[False for _ in range(COLS + 1)] for _ in range(ROWS + 1)]
 
 def init_graphics():
@@ -53,7 +50,6 @@ def generate_maze(start_r, start_c):
         neighbors = get_neighbors(current_r, current_c)
         
         if neighbors:
-            # Pick a random neighbor
             next_r, next_c, direction = random.choice(neighbors)
             stack.append((current_r, current_c))
             
@@ -70,34 +66,29 @@ def generate_maze(start_r, start_c):
             current_r, current_c = next_r, next_c
             visited[current_r][current_c] = True
         elif stack:
-            # Backtrack
             current_r, current_c = stack.pop()
         else:
             break
 
 def draw_maze():
     """Renders the maze based on northWall and eastWall arrays."""
-    glColor3f(1.0, 1.0, 1.0) # White walls
+    glColor3f(1.0, 1.0, 1.0)
     glLineWidth(2)
     
     glBegin(GL_LINES)
-    # The assignment notes the 0th row/column are boundaries
     for r in range(ROWS):
         for c in range(COLS):
             x = c * CELL_SIZE + 20
             y = r * CELL_SIZE + 20
             
-            # Draw North Wall
             if northWall[r][c] == 1:
                 glVertex2f(x, y + CELL_SIZE)
                 glVertex2f(x + CELL_SIZE, y + CELL_SIZE)
                 
-            # Draw East Wall
             if eastWall[r][c] == 1:
                 glVertex2f(x + CELL_SIZE, y)
                 glVertex2f(x + CELL_SIZE, y + CELL_SIZE)
                 
-    # Draw Left and Bottom boundaries (as per assignment logic)
     for r in range(ROWS): # Left boundary
         glVertex2f(20, r * CELL_SIZE + 20)
         glVertex2f(20, (r + 1) * CELL_SIZE + 20)
@@ -109,7 +100,6 @@ def draw_maze():
 def main():
     init_graphics()
     
-    # Generate the maze once before starting the loop
     generate_maze(0, 0)
     
     running = True
