@@ -6,7 +6,7 @@ import random
 
 ROWS = 20
 COLS = 20
-CELL_SIZE = 30
+CELL_SIZE = 30 
 
 # northWall[r][c] = 1 if solid upper wall, 0 if missing (eaten)
 northWall = [[1 for _ in range(COLS + 1)] for _ in range(ROWS + 1)]
@@ -26,22 +26,21 @@ def init_graphics():
 def get_neighbors(r, c):
     """Finds unvisited adjacent cells."""
     neighbors = []
-    # Check North
     if r < ROWS - 1 and not visited[r + 1][c]:
         neighbors.append((r + 1, c, 'N'))
-    # Check South
     if r > 0 and not visited[r - 1][c]:
         neighbors.append((r - 1, c, 'S'))
-    # Check East
     if c < COLS - 1 and not visited[r][c + 1]:
         neighbors.append((r, c + 1, 'E'))
-    # Check West
     if c > 0 and not visited[r][c - 1]:
         neighbors.append((r, c - 1, 'W'))
     return neighbors
 
-def generate_maze(start_r, start_c):
-    """The 'Mouse' logic: uses a stack to eat through walls and create a path."""
+def generate_maze_step(start_r, start_c):
+    """
+    The 'Mouse' logic: uses a stack to eat through walls.
+    Yields after every wall is eaten to allow for animation.
+    """
     stack = []
     current_r, current_c = start_r, start_c
     visited[current_r][current_c] = True
@@ -53,7 +52,6 @@ def generate_maze(start_r, start_c):
             next_r, next_c, direction = random.choice(neighbors)
             stack.append((current_r, current_c))
             
-            # Remove the wall between current and next
             if direction == 'N':
                 northWall[current_r][current_c] = 0
             elif direction == 'S':
@@ -65,8 +63,10 @@ def generate_maze(start_r, start_c):
                 
             current_r, current_c = next_r, next_c
             visited[current_r][current_c] = True
+            yield
         elif stack:
             current_r, current_c = stack.pop()
+            yield
         else:
             break
 
@@ -80,19 +80,17 @@ def draw_maze():
         for c in range(COLS):
             x = c * CELL_SIZE + 20
             y = r * CELL_SIZE + 20
-            
             if northWall[r][c] == 1:
                 glVertex2f(x, y + CELL_SIZE)
                 glVertex2f(x + CELL_SIZE, y + CELL_SIZE)
-                
             if eastWall[r][c] == 1:
                 glVertex2f(x + CELL_SIZE, y)
                 glVertex2f(x + CELL_SIZE, y + CELL_SIZE)
                 
-    for r in range(ROWS): # Left boundary
+    for r in range(ROWS):
         glVertex2f(20, r * CELL_SIZE + 20)
         glVertex2f(20, (r + 1) * CELL_SIZE + 20)
-    for c in range(COLS): # Bottom boundary
+    for c in range(COLS):
         glVertex2f(c * CELL_SIZE + 20, 20)
         glVertex2f((c + 1) * CELL_SIZE + 20, 20)
     glEnd()
@@ -100,7 +98,8 @@ def draw_maze():
 def main():
     init_graphics()
     
-    generate_maze(0, 0)
+    maze_gen = generate_maze_step(0, 0)
+    generating = True
     
     running = True
     while running:
@@ -108,10 +107,17 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
         
+        if generating:
+            try:
+                next(maze_gen)
+            except StopIteration:
+                generating = False
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         draw_maze()
         pygame.display.flip()
-        pygame.time.wait(10)
+        
+        pygame.time.wait(20)
     
     pygame.quit()
 
